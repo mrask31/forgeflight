@@ -44,9 +44,11 @@ export function LoginForm() {
       });
 
       if (authError) {
-        const message = getAuthErrorMessage(authError.message);
+        const message = getAuthErrorMessage(authError.code);
         setError(message);
         console.error('Authentication error:', authError);
+        console.error('Error code:', authError.code);
+        console.error('Error message:', authError.message);
         return;
       }
 

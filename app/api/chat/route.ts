@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     });
 
     // Return streaming response
-    return result.toDataStreamResponse();
+    return result.toAIStreamResponse();
   } catch (error) {
     console.error('Chat API error:', error);
     

@@ -1,4 +1,4 @@
-import { google } from '@ai-sdk/google';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { streamText } from 'ai';
 import { SYSTEM_INSTRUCTION, STUDY_MODE_CONTEXTS } from '@/lib/ai/system-instruction';
 import type { StudyMode } from '@/types/chat';
@@ -35,11 +35,11 @@ export async function POST(req: Request) {
     console.log('📡 Calling Gemini API with model: gemini-pro');
 
     // Create Google provider with explicit API key
-    const googleProvider = google(apiKey);
+    const google = createGoogleGenerativeAI({ apiKey });
 
     // Call Gemini API with streaming and multimodal support
     const result = await streamText({
-      model: googleProvider.languageModel('gemini-pro'),
+      model: google('gemini-pro'),
       system: systemMessage,
       messages: messages,
       temperature: 0.7,

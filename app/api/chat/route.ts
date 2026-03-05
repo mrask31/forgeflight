@@ -32,7 +32,7 @@ export async function POST(req: Request) {
 
     // Call Gemini API with streaming and multimodal support
     const result = await streamText({
-      model: google('gemini-1.5-pro'),
+      model: google('gemini-pro'),
       system: systemMessage,
       messages: messages,
       temperature: 0.7,

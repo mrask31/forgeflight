@@ -30,14 +30,11 @@ export async function POST(req: Request) {
       systemMessage += '\n\n' + STUDY_MODE_CONTEXTS[mode as StudyMode];
     }
 
-    // Initialize Google provider with API key
-    const googleProvider = google({
-      apiKey: process.env.GEMINI_API_KEY,
-    });
-
     // Call Gemini API with streaming and multimodal support
     const result = await streamText({
-      model: googleProvider('gemini-1.5-pro'),
+      model: google('gemini-1.5-pro', {
+        apiKey: process.env.GEMINI_API_KEY,
+      }),
       system: systemMessage,
       messages: messages,
       temperature: 0.7,

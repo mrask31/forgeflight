@@ -31,11 +31,11 @@ export async function POST(req: Request) {
       systemMessage += '\n\n' + STUDY_MODE_CONTEXTS[mode as StudyMode];
     }
 
-    console.log('📡 Calling Gemini API with model: gemini-1.5-flash');
+    console.log('📡 Calling Gemini API with model: gemini-pro');
 
     // Call Gemini API with streaming and multimodal support
     const result = await streamText({
-      model: google('gemini-1.5-flash'),
+      model: google('gemini-pro'),
       system: systemMessage,
       messages: messages,
       temperature: 0.7,

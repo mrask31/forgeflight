@@ -10,8 +10,8 @@ export async function POST(req: Request) {
     const { messages, mode } = await req.json();
 
     // Validate API key
-    if (!process.env.GEMINI_API_KEY) {
-      console.error('GEMINI_API_KEY not configured');
+    if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+      console.error('GOOGLE_GENERATIVE_AI_API_KEY not configured');
       return new Response(
         JSON.stringify({ 
           error: 'AI service configuration error. Please contact support.',
@@ -32,9 +32,7 @@ export async function POST(req: Request) {
 
     // Call Gemini API with streaming and multimodal support
     const result = await streamText({
-      model: google('gemini-1.5-pro', {
-        apiKey: process.env.GEMINI_API_KEY,
-      }),
+      model: google('gemini-1.5-pro'),
       system: systemMessage,
       messages: messages,
       temperature: 0.7,

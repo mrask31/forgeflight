@@ -103,6 +103,7 @@ export async function POST(req: Request) {
               data: pohBase64, 
               mimeType: 'application/pdf' 
             }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ] as any // SDK types don't include file type yet
         };
         console.log('📚 POH PDF loaded and injected into context');

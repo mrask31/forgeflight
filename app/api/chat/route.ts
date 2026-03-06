@@ -1,6 +1,7 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { streamText, type CoreMessage } from 'ai';
 import { SYSTEM_INSTRUCTION, STUDY_MODE_CONTEXTS } from '@/lib/ai/system-instruction';
+import { FLIGHT_KNOWLEDGE_BASE } from '@/lib/ai/knowledge-base';
 import type { StudyMode } from '@/types/chat';
 
 // Using Node.js runtime for better AI SDK compatibility
@@ -81,7 +82,12 @@ export async function POST(req: Request) {
     try {
       const result = await streamText({
         model: google('gemini-2.5-flash'),
-        system: systemMessage,
+        system: `${systemMessage}
+
+# PERMANENT COURSE MATERIAL
+You have permanently memorized the following textbooks. Use this specific information to answer student questions exactly:
+
+${FLIGHT_KNOWLEDGE_BASE}`,
         messages: coreMessages,
         temperature: 0.7,
         maxTokens: 2000,

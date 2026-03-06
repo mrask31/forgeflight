@@ -1,4 +1,5 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { anthropic } from '@ai-sdk/anthropic';
 import { streamText } from 'ai';
 import { SYSTEM_INSTRUCTION, STUDY_MODE_CONTEXTS } from '@/lib/ai/system-instruction';
 import type { StudyMode } from '@/types/chat';
@@ -10,44 +11,78 @@ export async function POST(req: Request) {
   try {
     const { messages, mode } = await req.json();
 
-    // Validate API key
-    const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-    if (!apiKey) {
-      console.error('🚨 MISSING API KEY: GOOGLE_GENERATIVE_AI_API_KEY not configured');
-      return new Response(
-        JSON.stringify({ 
-          error: 'AI service configuration error. Please contact support.',
-          code: 'MISSING_API_KEY'
-        }),
-        { 
-          status: 500,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
-    }
-
     // Build system message with mode context if applicable
     let systemMessage = SYSTEM_INSTRUCTION;
     if (mode && STUDY_MODE_CONTEXTS[mode as StudyMode]) {
       systemMessage += '\n\n' + STUDY_MODE_CONTEXTS[mode as StudyMode];
     }
 
-    console.log('📡 Calling Gemini API with model: gemini-2.5-flash');
+    // Detect if the last message contains an image attachment
+    const lastMessage = messages[messages.length - 1];
+    const hasAttachment = lastMessage?.experimental_attachments && 
+                         lastMessage.experimental_attachments.length > 0;
 
-    // Create Google provider with explicit API key
-    const google = createGoogleGenerativeAI({ apiKey });
+    if (hasAttachment) {
+      // Route to Gemini for image analysis (Sectional Scanner)
+      const geminiApiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+      if (!geminiApiKey) {
+        console.error('🚨 MISSING API KEY: GOOGLE_GENERATIVE_AI_API_KEY not configured');
+        return new Response(
+          JSON.stringify({ 
+            error: 'AI service configuration error. Please contact support.',
+            code: 'MISSING_API_KEY'
+          }),
+          { 
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+      }
 
-    // Call Gemini API with streaming and multimodal support
-    const result = await streamText({
-      model: google('gemini-2.5-flash'),
-      system: systemMessage,
-      messages: messages,
-      temperature: 0.7,
-      maxTokens: 2000,
-    });
+      console.log('📡 Routing to Gemini (Sectional Scanner)');
+      console.log('🤖 Model: gemini-2.5-flash');
 
-    // Return streaming response
-    return result.toAIStreamResponse();
+      const google = createGoogleGenerativeAI({ apiKey: geminiApiKey });
+
+      const result = await streamText({
+        model: google('gemini-2.5-flash'),
+        system: systemMessage,
+        messages: messages,
+        temperature: 0.7,
+        maxTokens: 2000,
+      });
+
+      return result.toAIStreamResponse();
+    } else {
+      // Route to Claude for text-based Socratic tutoring
+      const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
+      if (!anthropicApiKey) {
+        console.error('🚨 MISSING API KEY: ANTHROPIC_API_KEY not configured');
+        return new Response(
+          JSON.stringify({ 
+            error: 'AI service configuration error. Please contact support.',
+            code: 'MISSING_API_KEY'
+          }),
+          { 
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      console.log('📡 Routing to Claude (Grounded Truth)');
+      console.log('🤖 Model: claude-3-5-sonnet-20241022');
+
+      const result = await streamText({
+        model: anthropic('claude-3-5-sonnet-20241022'),
+        system: systemMessage,
+        messages: messages,
+        temperature: 0.7,
+        maxTokens: 2000,
+      });
+
+      return result.toAIStreamResponse();
+    }
   } catch (error) {
     console.error('🚨 GEMINI API ERROR:', error);
     console.error('Error details:', JSON.stringify(error, null, 2));

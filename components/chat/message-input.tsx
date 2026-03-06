@@ -1,7 +1,7 @@
 'use client';
 
-import { FormEvent, useRef, ChangeEvent } from 'react';
-import { Send, Paperclip } from 'lucide-react';
+import { FormEvent, useRef, ChangeEvent, useState } from 'react';
+import { Send, Paperclip, X } from 'lucide-react';
 
 interface MessageInputProps {
   value: string;
@@ -21,11 +21,23 @@ export function MessageInput({
   onFileSelect,
 }: MessageInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [attachedImage, setAttachedImage] = useState<{
+    file: File;
+    preview: string;
+  } | null>(null);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && onFileSelect) {
-      onFileSelect(file);
+    if (file) {
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAttachedImage({
+          file: file,
+          preview: reader.result as string,
+        });
+      };
+      reader.readAsDataURL(file);
     }
     // Reset input so same file can be selected again
     if (fileInputRef.current) {
@@ -33,15 +45,48 @@ export function MessageInput({
     }
   };
 
+  const handleRemoveImage = () => {
+    setAttachedImage(null);
+  };
+
+  const handleFormSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    
+    if (attachedImage && onFileSelect) {
+      onFileSelect(attachedImage.file);
+      setAttachedImage(null);
+    } else {
+      onSubmit(e);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      onSubmit(e as unknown as FormEvent);
+      handleFormSubmit(e as unknown as FormEvent);
     }
   };
 
   return (
-    <form onSubmit={onSubmit} className="border-t border-background-tertiary p-4">
+    <form onSubmit={handleFormSubmit} className="border-t border-background-tertiary p-4">
+      {attachedImage && (
+        <div className="mb-3 relative inline-block">
+          <img
+            src={attachedImage.preview}
+            alt="Preview"
+            className="max-h-24 rounded-lg border border-gray-700"
+          />
+          <button
+            type="button"
+            onClick={handleRemoveImage}
+            className="absolute -top-2 -right-2 p-1 bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors"
+            title="Remove image"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+      
       <div className="flex items-end gap-2">
         <button
           type="button"
@@ -78,7 +123,7 @@ export function MessageInput({
 
         <button
           type="submit"
-          disabled={disabled || !value.trim()}
+          disabled={disabled || (!value.trim() && !attachedImage)}
           className="flex-shrink-0 p-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Send className="w-5 h-5" />

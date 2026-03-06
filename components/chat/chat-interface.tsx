@@ -11,7 +11,7 @@ export function ChatInterface() {
   const [activeMode, setActiveMode] = useState<StudyMode | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, isLoading, append } = useChat({
     api: '/api/chat',
     body: {
       mode: activeMode,
@@ -47,6 +47,7 @@ export function ChatInterface() {
         onChange={(value) => handleInputChange({ target: { value } } as React.ChangeEvent<HTMLInputElement>)}
         onSubmit={handleSubmit}
         disabled={isLoading}
+        append={append}
       />
     </div>
   );

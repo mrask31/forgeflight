@@ -2,6 +2,7 @@
 
 import { FormEvent, useRef, ChangeEvent, useState, useEffect } from 'react';
 import { Send, Paperclip, X } from 'lucide-react';
+import type { Message } from 'ai/react';
 
 interface MessageInputProps {
   value: string;
@@ -9,14 +10,15 @@ interface MessageInputProps {
   onSubmit: (e: FormEvent, options?: { experimental_attachments?: FileList }) => void;
   disabled: boolean;
   placeholder?: string;
+  append: (message: Message | { role: 'user'; content: string; experimental_attachments?: Array<{ name: string; contentType: string; url: string }> }) => void;
 }
 
 export function MessageInput({
   value,
   onChange,
-  onSubmit,
   disabled,
   placeholder = 'Ask about flying the Cessna 172...',
+  append,
 }: MessageInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
@@ -50,19 +52,46 @@ export function MessageInput({
   const handleFormSubmit = (e: FormEvent) => {
     e.preventDefault();
     
-    if (selectedFiles) {
-      // Submit with attachments
-      onSubmit(e, { experimental_attachments: selectedFiles });
+    if (!value.trim() && (!selectedFiles || selectedFiles.length === 0)) return;
+
+    const textToSend = value.trim() || 'Please analyze this image.';
+
+    if (selectedFiles && selectedFiles.length > 0) {
+      const file = selectedFiles[0];
+      const reader = new FileReader();
       
-      // Clear state after submission
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-      setSelectedFiles(null);
-      setPreviewUrl(null);
+      reader.onload = (event) => {
+        const base64String = event.target?.result as string;
+        
+        append({
+          role: 'user',
+          content: textToSend,
+          experimental_attachments: [
+            {
+              name: file.name,
+              contentType: file.type,
+              url: base64String,
+            },
+          ],
+        });
+
+        // Clear UI state
+        onChange('');
+        setSelectedFiles(null);
+        setPreviewUrl(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      };
+      
+      reader.readAsDataURL(file);
     } else {
-      // Submit without attachments
-      onSubmit(e);
+      // Text only submission
+      append({
+        role: 'user',
+        content: textToSend,
+      });
+      onChange('');
     }
   };
 

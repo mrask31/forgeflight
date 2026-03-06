@@ -11,6 +11,17 @@ export async function POST(req: Request) {
   try {
     const { messages, mode } = await req.json();
 
+    // Debug logging to see what we're receiving
+    const lastMessage = messages[messages.length - 1];
+    console.log('📨 Last message structure:', JSON.stringify({
+      role: lastMessage?.role,
+      hasContent: !!lastMessage?.content,
+      hasExperimentalAttachments: !!lastMessage?.experimental_attachments,
+      experimentalAttachmentsLength: lastMessage?.experimental_attachments?.length || 0,
+      hasAttachments: !!lastMessage?.attachments,
+      attachmentsLength: lastMessage?.attachments?.length || 0,
+    }, null, 2));
+
     // Build system message with mode context if applicable
     let systemMessage = SYSTEM_INSTRUCTION;
     if (mode && STUDY_MODE_CONTEXTS[mode as StudyMode]) {
@@ -18,11 +29,14 @@ export async function POST(req: Request) {
     }
 
     // Detect if the last message contains an image attachment
-    const lastMessage = messages[messages.length - 1];
-    const hasAttachment = lastMessage?.experimental_attachments && 
-                         lastMessage.experimental_attachments.length > 0;
+    const hasAttachments = (lastMessage?.experimental_attachments && 
+                           lastMessage.experimental_attachments.length > 0) ||
+                          (lastMessage?.attachments && 
+                           lastMessage.attachments.length > 0);
 
-    if (hasAttachment) {
+    console.log('🔍 Attachment detection result:', hasAttachments);
+
+    if (hasAttachments) {
       // Route to Gemini for image analysis (Sectional Scanner)
       const geminiApiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
       if (!geminiApiKey) {

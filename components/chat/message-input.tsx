@@ -113,18 +113,25 @@ export function MessageInput({
 
   return (
     <form onSubmit={handleFormSubmit} className="border-t border-background-tertiary p-4">
-      {previewUrl && (
+      {previewUrl && selectedFiles && (
         <div className="mb-3 relative inline-block">
-          <img
-            src={previewUrl}
-            alt="Preview"
-            className="max-h-24 rounded-lg border border-gray-700"
-          />
+          {selectedFiles[0].type === 'application/pdf' ? (
+            <div className="flex items-center gap-2 px-4 py-3 bg-background-tertiary border border-gray-700 rounded-lg">
+              <span className="text-3xl">📄</span>
+              <span className="text-sm text-gray-300">{selectedFiles[0].name}</span>
+            </div>
+          ) : (
+            <img
+              src={previewUrl}
+              alt="Preview"
+              className="max-h-24 rounded-lg border border-gray-700"
+            />
+          )}
           <button
             type="button"
             onClick={handleRemoveImage}
             className="absolute -top-2 -right-2 p-1 bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors"
-            title="Remove image"
+            title="Remove attachment"
           >
             <X className="w-4 h-4" />
           </button>
@@ -145,7 +152,7 @@ export function MessageInput({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,application/pdf"
           onChange={handleFileChange}
           className="hidden"
         />

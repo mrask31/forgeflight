@@ -19,15 +19,30 @@ export async function POST(req: Request) {
     // Manually map messages to CoreMessage format to preserve image attachments
     const coreMessages: CoreMessage[] = messages.map((message: { role: string; content: string; experimental_attachments?: Array<{ name: string; contentType: string; url: string }> }) => {
       if (message.role === 'user' && message.experimental_attachments && message.experimental_attachments.length > 0) {
-        // User message with image attachments - build multimodal content array
+        // User message with attachments - build multimodal content array
         return {
           role: 'user',
           content: [
-            { type: 'text', text: message.content || 'Analyze this image.' },
-            ...message.experimental_attachments.map((attachment: { name: string; contentType: string; url: string }) => ({
-              type: 'image',
-              image: new URL(attachment.url) // Wrap in URL() so SDK can parse MIME type from data: prefix
-            }))
+            { type: 'text', text: message.content || 'Analyze this document.' },
+            ...message.experimental_attachments.map((attachment: { name: string; contentType: string; url: string }) => {
+              const isPDF = attachment.url.startsWith('data:application/pdf');
+              
+              if (isPDF) {
+                // PDF: Extract pure base64 and use file type
+                const pureBase64 = attachment.url.includes(',') ? attachment.url.split(',')[1] : attachment.url;
+                return {
+                  type: 'file',
+                  data: pureBase64,
+                  mimeType: 'application/pdf'
+                } as any; // Cast to bypass strict SDK type checking
+              } else {
+                // Image: Use full URL wrapper for MIME parsing
+                return {
+                  type: 'image',
+                  image: new URL(attachment.url)
+                };
+              }
+            })
           ]
         };
       }

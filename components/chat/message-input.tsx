@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useRef, ChangeEvent, useState, useEffect } from 'react';
+import { FormEvent, useRef, useState, useEffect } from 'react';
 import { Send, Paperclip, X } from 'lucide-react';
 import type { Message } from 'ai/react';
 
@@ -21,18 +21,19 @@ export function MessageInput({
   append,
 }: MessageInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      setSelectedFiles(files);
-      
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setSelectedFile(file);
+    
+    if (file) {
       // Create preview URL
-      const file = files[0];
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
+    } else {
+      setPreviewUrl(null);
     }
     
     // Reset input so same file can be selected again
@@ -41,23 +42,25 @@ export function MessageInput({
     }
   };
 
-  const handleRemoveImage = () => {
+  const handleRemoveFile = () => {
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
     }
-    setSelectedFiles(null);
+    setSelectedFile(null);
     setPreviewUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleFormSubmit = (e: FormEvent) => {
     e.preventDefault();
     
-    if (!value.trim() && (!selectedFiles || selectedFiles.length === 0)) return;
+    if (!value.trim() && !selectedFile) return;
 
-    const textToSend = value.trim() || 'Please analyze this image.';
+    const textToSend = value.trim() || 'Please analyze this document.';
 
-    if (selectedFiles && selectedFiles.length > 0) {
-      const file = selectedFiles[0];
+    if (selectedFile) {
       const reader = new FileReader();
       
       reader.onload = (event) => {
@@ -68,8 +71,8 @@ export function MessageInput({
           content: textToSend,
           experimental_attachments: [
             {
-              name: file.name,
-              contentType: file.type,
+              name: selectedFile.name,
+              contentType: selectedFile.type,
               url: base64String,
             },
           ],
@@ -77,14 +80,14 @@ export function MessageInput({
 
         // Clear UI state
         onChange('');
-        setSelectedFiles(null);
+        setSelectedFile(null);
         setPreviewUrl(null);
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
       };
       
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(selectedFile);
     } else {
       // Text only submission
       append({
@@ -113,27 +116,26 @@ export function MessageInput({
 
   return (
     <form onSubmit={handleFormSubmit} className="border-t border-background-tertiary p-4">
-      {previewUrl && selectedFiles && (
-        <div className="mb-3 relative inline-block">
-          {selectedFiles[0].type === 'application/pdf' ? (
-            <div className="flex items-center gap-2 px-4 py-3 bg-background-tertiary border border-gray-700 rounded-lg">
-              <span className="text-3xl">📄</span>
-              <span className="text-sm text-gray-300">{selectedFiles[0].name}</span>
+      {selectedFile && (
+        <div className="relative inline-block mb-2 mt-2">
+          {selectedFile.type?.includes('pdf') ? (
+            <div className="flex items-center gap-2 p-3 bg-slate-800 rounded-lg border border-slate-700">
+              <span className="text-xl">📄</span>
+              <span className="text-sm text-slate-200 truncate max-w-[200px]">{selectedFile.name}</span>
             </div>
           ) : (
-            <img
-              src={previewUrl}
-              alt="Preview"
-              className="max-h-24 rounded-lg border border-gray-700"
+            <img 
+              src={URL.createObjectURL(selectedFile)} 
+              alt="Preview" 
+              className="h-20 w-auto rounded-lg object-cover border border-slate-700" 
             />
           )}
           <button
             type="button"
-            onClick={handleRemoveImage}
-            className="absolute -top-2 -right-2 p-1 bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors"
-            title="Remove attachment"
+            onClick={handleRemoveFile}
+            className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 transition-colors rounded-full w-6 h-6 text-white text-xs flex items-center justify-center shadow-lg"
           >
-            <X className="w-4 h-4" />
+            ✕
           </button>
         </div>
       )}
@@ -144,7 +146,7 @@ export function MessageInput({
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled}
           className="flex-shrink-0 p-3 bg-background-tertiary hover:bg-background-tertiary/80 text-gray-400 hover:text-primary-500 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title="Upload sectional chart or flight map"
+          title="Upload sectional chart, flight map, or PDF document"
         >
           <Paperclip className="w-5 h-5" />
         </button>
@@ -174,7 +176,7 @@ export function MessageInput({
 
         <button
           type="submit"
-          disabled={disabled || (!value.trim() && !selectedFiles)}
+          disabled={disabled || (!value.trim() && !selectedFile)}
           className="flex-shrink-0 p-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Send className="w-5 h-5" />

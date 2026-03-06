@@ -90,7 +90,7 @@ export function QuickActions({ onModeSelect, activeMode, disabled }: QuickAction
           <div className="mt-2 p-3 bg-background-tertiary rounded-lg">
             <audio
               controls
-              src="/audio/briefing.mp3"
+              src="/audio/briefing.m4a"
               className="w-full"
               preload="metadata"
             >

@@ -71,10 +71,10 @@ export async function POST(req: Request) {
       }
 
       console.log('📡 Routing to Claude (Grounded Truth)');
-      console.log('🤖 Model: claude-3-5-sonnet-20241022');
+      console.log('🤖 Model: claude-3-7-sonnet-20250219');
 
       const result = await streamText({
-        model: anthropic('claude-3-5-sonnet-20241022'),
+        model: anthropic('claude-3-7-sonnet-20250219'),
         system: systemMessage,
         messages: messages,
         temperature: 0.7,

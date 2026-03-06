@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useRef, useState, useEffect } from 'react';
-import { Send, Paperclip, X } from 'lucide-react';
+import { Send, Paperclip } from 'lucide-react';
 import type { Message } from 'ai/react';
 
 interface MessageInputProps {

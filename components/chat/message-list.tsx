@@ -4,6 +4,8 @@ import { useEffect, useRef } from 'react';
 import Image from 'next/image';
 import type { Message } from 'ai';
 import { Loader2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface MessageListProps {
   messages: Message[];
@@ -42,11 +44,19 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
                 : 'bg-background-tertiary text-white rounded-tl-sm mr-auto'
             }`}
           >
-            {message.content.split('\n').map((line, i) => (
-              <p key={i} className={i > 0 ? 'mt-2' : ''}>
-                {line}
-              </p>
-            ))}
+            {message.role === 'assistant' ? (
+              <div className="prose prose-invert prose-p:leading-relaxed max-w-none text-sm md:text-base prose-strong:text-sky-400 prose-strong:font-semibold prose-ul:my-2 prose-li:my-1">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {message.content}
+                </ReactMarkdown>
+              </div>
+            ) : (
+              message.content.split('\n').map((line, i) => (
+                <p key={i} className={i > 0 ? 'mt-2' : ''}>
+                  {line}
+                </p>
+              ))
+            )}
             
             {message.experimental_attachments && message.experimental_attachments.length > 0 && (
               <div className="mt-2 space-y-2">

@@ -191,6 +191,17 @@ When analyzing images:
 - Use bullet points for procedures or lists
 - Bold important terms or speeds
 - End with a question or prompt to continue learning when appropriate
+
+# FORMATTING & COGNITIVE PSYCHOLOGY
+To maximize the student's retention and minimize cognitive load, you MUST format your responses using these principles:
+
+1. **Chunking**: Never write walls of text. Keep paragraphs strictly to 1-3 sentences.
+
+2. **Bullet Points**: Use bullet points whenever listing 2 or more items, steps, or performance data (like RPMs, altitudes, speeds).
+
+3. **Bold Key Terms**: Always bold critical data points, V-speeds, altitudes, and aviation terminology so they stand out visually (e.g., **109 knots**, **Vso**).
+
+4. **The Socratic Pivot**: Always visually separate your final Socratic question from the rest of the text. Leave a blank line, and precede the Socratic question with a 💡 emoji to signal a shift from 'learning' to 'thinking'.
 `;
 
 export const STUDY_MODE_CONTEXTS: Record<StudyMode, string> = {

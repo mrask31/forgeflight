@@ -58,15 +58,21 @@ export async function POST(req: Request) {
 
       const google = createGoogleGenerativeAI({ apiKey: geminiApiKey });
 
-      const result = await streamText({
-        model: google('gemini-2.5-flash'),
-        system: systemMessage,
-        messages: messages,
-        temperature: 0.7,
-        maxTokens: 2000,
-      });
+      try {
+        const result = await streamText({
+          model: google('gemini-2.5-flash'),
+          system: systemMessage,
+          messages: messages,
+          temperature: 0.7,
+          maxTokens: 2000,
+        });
 
-      return result.toAIStreamResponse();
+        return result.toAIStreamResponse();
+      } catch (geminiError) {
+        console.error('CRITICAL_AI_ERROR (Gemini):', geminiError);
+        console.error('Gemini error details:', JSON.stringify(geminiError, null, 2));
+        throw geminiError;
+      }
     } else {
       // Route to Claude for text-based Socratic tutoring
       const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
@@ -87,15 +93,21 @@ export async function POST(req: Request) {
       console.log('📡 Routing to Claude (Grounded Truth)');
       console.log('🤖 Model: claude-3-7-sonnet-20250219');
 
-      const result = await streamText({
-        model: anthropic('claude-3-7-sonnet-20250219'),
-        system: systemMessage,
-        messages: messages,
-        temperature: 0.7,
-        maxTokens: 2000,
-      });
+      try {
+        const result = await streamText({
+          model: anthropic('claude-3-7-sonnet-20250219'),
+          system: systemMessage,
+          messages: messages,
+          temperature: 0.7,
+          maxTokens: 2000,
+        });
 
-      return result.toAIStreamResponse();
+        return result.toAIStreamResponse();
+      } catch (anthropicError) {
+        console.error('CRITICAL_AI_ERROR (Anthropic):', anthropicError);
+        console.error('Anthropic error details:', JSON.stringify(anthropicError, null, 2));
+        throw anthropicError;
+      }
     }
   } catch (error) {
     console.error('🚨 GEMINI API ERROR:', error);

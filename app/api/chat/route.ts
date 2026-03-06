@@ -17,14 +17,14 @@ export async function POST(req: Request) {
     }
 
     // Manually map messages to CoreMessage format to preserve image attachments
-    const coreMessages: CoreMessage[] = messages.map((message: any) => {
+    const coreMessages: CoreMessage[] = messages.map((message: { role: string; content: string; experimental_attachments?: Array<{ name: string; contentType: string; url: string }> }) => {
       if (message.role === 'user' && message.experimental_attachments && message.experimental_attachments.length > 0) {
         // User message with image attachments - build multimodal content array
         return {
           role: 'user',
           content: [
             { type: 'text', text: message.content || 'Analyze this image.' },
-            ...message.experimental_attachments.map((attachment: any) => ({
+            ...message.experimental_attachments.map((attachment: { name: string; contentType: string; url: string }) => ({
               type: 'image',
               image: attachment.url // Pass the Base64 data URL string directly to Gemini
             }))

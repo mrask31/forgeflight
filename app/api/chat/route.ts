@@ -26,7 +26,7 @@ export async function POST(req: Request) {
             { type: 'text', text: message.content || 'Analyze this image.' },
             ...message.experimental_attachments.map((attachment: { name: string; contentType: string; url: string }) => ({
               type: 'image',
-              image: attachment.url // Pass the Base64 data URL string directly to Gemini
+              image: new URL(attachment.url) // Wrap in URL() so SDK can parse MIME type from data: prefix
             }))
           ]
         };

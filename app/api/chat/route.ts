@@ -3,6 +3,8 @@ import { streamText, type CoreMessage } from 'ai';
 import { SYSTEM_INSTRUCTION, STUDY_MODE_CONTEXTS } from '@/lib/ai/system-instruction';
 import { FLIGHT_KNOWLEDGE_BASE } from '@/lib/ai/knowledge-base';
 import type { StudyMode } from '@/types/chat';
+import fs from 'fs';
+import path from 'path';
 
 // Using Node.js runtime for better AI SDK compatibility
 export const runtime = 'nodejs';
@@ -79,6 +81,41 @@ export async function POST(req: Request) {
 
     const google = createGoogleGenerativeAI({ apiKey: geminiApiKey });
 
+    // Server-Side Librarian: Read POH PDF from filesystem and inject into context
+    let pohMessage: CoreMessage | null = null;
+    try {
+      const pohPath = path.join(process.cwd(), 'public', 'docs', 'POH-Cessna-172s.pdf');
+      if (fs.existsSync(pohPath)) {
+        const fileBuffer = fs.readFileSync(pohPath);
+        const pohBase64 = fileBuffer.toString('base64');
+        
+        // Create a simulated message to inject the PDF into Gemini's Context Window
+        pohMessage = {
+          role: 'user',
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          content: [
+            { 
+              type: 'text', 
+              text: 'SYSTEM REFERENCE DOCUMENT: The following is the complete Pilot Operating Handbook (POH) for the Cessna 172S. Memorize this document completely, paying special attention to performance charts, tables, and emergency procedures. Use it as your primary source of truth for all Cessna 172S questions.' 
+            },
+            { 
+              type: 'file', 
+              data: pohBase64, 
+              mimeType: 'application/pdf' 
+            }
+          ] as any // SDK types don't include file type yet
+        };
+        console.log('📚 POH PDF loaded and injected into context');
+      } else {
+        console.warn('⚠️ POH PDF not found at:', pohPath);
+      }
+    } catch (error) {
+      console.error('❌ Could not read POH PDF:', error);
+    }
+
+    // Prepend the injected PDF to the user's actual messages
+    const finalMessages = pohMessage ? [pohMessage, ...coreMessages] : coreMessages;
+
     try {
       const result = await streamText({
         model: google('gemini-2.5-flash'),
@@ -88,7 +125,7 @@ export async function POST(req: Request) {
 You have permanently memorized the following textbooks. Use this specific information to answer student questions exactly:
 
 ${FLIGHT_KNOWLEDGE_BASE}`,
-        messages: coreMessages,
+        messages: finalMessages,
         temperature: 0.7,
         maxTokens: 2000,
       });

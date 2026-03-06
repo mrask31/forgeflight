@@ -1,5 +1,5 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { streamText } from 'ai';
+import { streamText, convertToCoreMessages } from 'ai';
 import { SYSTEM_INSTRUCTION, STUDY_MODE_CONTEXTS } from '@/lib/ai/system-instruction';
 import type { StudyMode } from '@/types/chat';
 
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
       const result = await streamText({
         model: google('gemini-2.5-flash'),
         system: systemMessage,
-        messages: messages,
+        messages: convertToCoreMessages(messages),
         temperature: 0.7,
         maxTokens: 2000,
       });

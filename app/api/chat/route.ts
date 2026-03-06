@@ -1,5 +1,5 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { streamText, convertToCoreMessages } from 'ai';
+import { streamText, type CoreMessage } from 'ai';
 import { SYSTEM_INSTRUCTION, STUDY_MODE_CONTEXTS } from '@/lib/ai/system-instruction';
 import type { StudyMode } from '@/types/chat';
 
@@ -15,6 +15,28 @@ export async function POST(req: Request) {
     if (mode && STUDY_MODE_CONTEXTS[mode as StudyMode]) {
       systemMessage += '\n\n' + STUDY_MODE_CONTEXTS[mode as StudyMode];
     }
+
+    // Manually map messages to CoreMessage format to preserve image attachments
+    const coreMessages: CoreMessage[] = messages.map((message: any) => {
+      if (message.role === 'user' && message.experimental_attachments && message.experimental_attachments.length > 0) {
+        // User message with image attachments - build multimodal content array
+        return {
+          role: 'user',
+          content: [
+            { type: 'text', text: message.content || 'Analyze this image.' },
+            ...message.experimental_attachments.map((attachment: any) => ({
+              type: 'image',
+              image: attachment.url // Pass the Base64 data URL string directly to Gemini
+            }))
+          ]
+        };
+      }
+      // Regular text-only message
+      return { 
+        role: message.role as 'user' | 'assistant', 
+        content: message.content 
+      };
+    });
 
     // Unified routing: ALL requests go to Gemini (handles text and images natively)
     const geminiApiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
@@ -41,7 +63,7 @@ export async function POST(req: Request) {
       const result = await streamText({
         model: google('gemini-2.5-flash'),
         system: systemMessage,
-        messages: convertToCoreMessages(messages),
+        messages: coreMessages,
         temperature: 0.7,
         maxTokens: 2000,
       });

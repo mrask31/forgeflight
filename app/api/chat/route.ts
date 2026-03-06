@@ -20,30 +20,33 @@ export async function POST(req: Request) {
     const coreMessages: CoreMessage[] = messages.map((message: { role: string; content: string; experimental_attachments?: Array<{ name: string; contentType: string; url: string }> }) => {
       if (message.role === 'user' && message.experimental_attachments && message.experimental_attachments.length > 0) {
         // User message with attachments - build multimodal content array
+        const contentParts: Array<{ type: 'text'; text: string } | { type: 'image'; image: URL } | { type: 'file'; data: string; mimeType: string }> = [
+          { type: 'text', text: message.content || 'Analyze this document.' }
+        ];
+
+        message.experimental_attachments.forEach((attachment: { name: string; contentType: string; url: string }) => {
+          const isPDF = attachment.url.startsWith('data:application/pdf');
+          
+          if (isPDF) {
+            // PDF: Extract pure base64 and use file type
+            const pureBase64 = attachment.url.includes(',') ? attachment.url.split(',')[1] : attachment.url;
+            contentParts.push({
+              type: 'file',
+              data: pureBase64,
+              mimeType: 'application/pdf'
+            });
+          } else {
+            // Image: Use full URL wrapper for MIME parsing
+            contentParts.push({
+              type: 'image',
+              image: new URL(attachment.url)
+            });
+          }
+        });
+
         return {
           role: 'user',
-          content: [
-            { type: 'text', text: message.content || 'Analyze this document.' },
-            ...message.experimental_attachments.map((attachment: { name: string; contentType: string; url: string }) => {
-              const isPDF = attachment.url.startsWith('data:application/pdf');
-              
-              if (isPDF) {
-                // PDF: Extract pure base64 and use file type
-                const pureBase64 = attachment.url.includes(',') ? attachment.url.split(',')[1] : attachment.url;
-                return {
-                  type: 'file',
-                  data: pureBase64,
-                  mimeType: 'application/pdf'
-                } as any; // Cast to bypass strict SDK type checking
-              } else {
-                // Image: Use full URL wrapper for MIME parsing
-                return {
-                  type: 'image',
-                  image: new URL(attachment.url)
-                };
-              }
-            })
-          ]
+          content: contentParts as any // SDK types don't include file type yet
         };
       }
       // Regular text-only message

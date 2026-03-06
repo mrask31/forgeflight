@@ -26,36 +26,6 @@ export function ChatInterface() {
     setActiveMode(mode);
   };
 
-  const handleFileSelect = async (file: File) => {
-    try {
-      // Convert file to base64 data URL
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64String = reader.result as string;
-        
-        // Append message with image attachment
-        await append({
-          role: 'user',
-          content: input || 'Please analyze this sectional chart or flight map.',
-          experimental_attachments: [
-            {
-              name: file.name,
-              contentType: file.type,
-              url: base64String,
-            },
-          ],
-        });
-        
-        // Clear input after sending
-        handleInputChange({ target: { value: '' } } as React.ChangeEvent<HTMLInputElement>);
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
-      console.error('File upload error:', err);
-      setError('Failed to upload image. Please try again.');
-    }
-  };
-
   return (
     <div className="flex flex-col h-full">
       <QuickActions
@@ -77,7 +47,6 @@ export function ChatInterface() {
         onChange={(value) => handleInputChange({ target: { value } } as React.ChangeEvent<HTMLInputElement>)}
         onSubmit={handleSubmit}
         disabled={isLoading}
-        onFileSelect={handleFileSelect}
       />
     </div>
   );

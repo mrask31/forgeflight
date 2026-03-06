@@ -1,15 +1,14 @@
 'use client';
 
-import { FormEvent, useRef, ChangeEvent, useState } from 'react';
+import { FormEvent, useRef, ChangeEvent, useState, useEffect } from 'react';
 import { Send, Paperclip, X } from 'lucide-react';
 
 interface MessageInputProps {
   value: string;
   onChange: (value: string) => void;
-  onSubmit: (e: FormEvent) => void;
+  onSubmit: (e: FormEvent, options?: { experimental_attachments?: FileList }) => void;
   disabled: boolean;
   placeholder?: string;
-  onFileSelect?: (file: File) => void;
 }
 
 export function MessageInput({
@@ -18,27 +17,22 @@ export function MessageInput({
   onSubmit,
   disabled,
   placeholder = 'Ask about flying the Cessna 172...',
-  onFileSelect,
 }: MessageInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [attachedImage, setAttachedImage] = useState<{
-    file: File;
-    preview: string;
-  } | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAttachedImage({
-          file: file,
-          preview: reader.result as string,
-        });
-      };
-      reader.readAsDataURL(file);
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      setSelectedFiles(files);
+      
+      // Create preview URL
+      const file = files[0];
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
     }
+    
     // Reset input so same file can be selected again
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -46,16 +40,28 @@ export function MessageInput({
   };
 
   const handleRemoveImage = () => {
-    setAttachedImage(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setSelectedFiles(null);
+    setPreviewUrl(null);
   };
 
   const handleFormSubmit = (e: FormEvent) => {
     e.preventDefault();
     
-    if (attachedImage && onFileSelect) {
-      onFileSelect(attachedImage.file);
-      setAttachedImage(null);
+    if (selectedFiles) {
+      // Submit with attachments
+      onSubmit(e, { experimental_attachments: selectedFiles });
+      
+      // Clear state after submission
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      setSelectedFiles(null);
+      setPreviewUrl(null);
     } else {
+      // Submit without attachments
       onSubmit(e);
     }
   };
@@ -67,12 +73,21 @@ export function MessageInput({
     }
   };
 
+  // Cleanup preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
   return (
     <form onSubmit={handleFormSubmit} className="border-t border-background-tertiary p-4">
-      {attachedImage && (
+      {previewUrl && (
         <div className="mb-3 relative inline-block">
           <img
-            src={attachedImage.preview}
+            src={previewUrl}
             alt="Preview"
             className="max-h-24 rounded-lg border border-gray-700"
           />
@@ -123,7 +138,7 @@ export function MessageInput({
 
         <button
           type="submit"
-          disabled={disabled || (!value.trim() && !attachedImage)}
+          disabled={disabled || (!value.trim() && !selectedFiles)}
           className="flex-shrink-0 p-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Send className="w-5 h-5" />

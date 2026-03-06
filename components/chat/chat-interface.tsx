@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useChat } from 'ai';
+import { useChat } from 'ai/react';
 import { MessageList } from './message-list';
 import { MessageInput } from './message-input';
 import { QuickActions } from './quick-actions';

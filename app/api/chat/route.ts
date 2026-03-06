@@ -46,6 +46,7 @@ export async function POST(req: Request) {
 
         return {
           role: 'user',
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           content: contentParts as any // SDK types don't include file type yet
         };
       }

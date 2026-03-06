@@ -11,7 +11,7 @@ export function ChatInterface() {
   const [activeMode, setActiveMode] = useState<StudyMode | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading, append } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     api: '/api/chat',
     body: {
       mode: activeMode,
